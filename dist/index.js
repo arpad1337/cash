@@ -9,8 +9,9 @@ var interfacer = require('./util/interfacer');
 var delimiter = require('./delimiter.js');
 var path = require('path');
 var fs = require('fs');
+var minimist = require('minimist');
 
-var cmds = undefined;
+var cmds = void 0;
 
 var app = {
 
@@ -39,7 +40,7 @@ var app = {
       out += str + '\n';
       return '';
     });
-    var commands = undefined;
+    var commands = void 0;
     if (tmpl) {
       // Render into a single string, inserting interpolated values.
       var interpVals = [].concat(Array.prototype.slice.call(arguments)).slice(1);
@@ -70,7 +71,7 @@ var app = {
       try {
         (function () {
           var mod = require('./commands/' + cmd + '.js');
-          var help = undefined;
+          var help = void 0;
           try {
             help = require('./help/' + cmd + '.js');
             help = String(help).replace(/^\n|\n$/g, '');
@@ -133,6 +134,21 @@ var app = {
       _loop(cmd);
     }
 
+    self.vorpal.localEnv = {};
+    var argv = minimist(process.argv.slice(2));
+
+    if (argv.c || argv._.length > 0) {
+      for (var k = 0; k < argv._.length; k++) {
+        self.vorpal.localEnv.k = argv._[k];
+      }
+      // If -c is used, use that string, otherwise use the script-name instead
+      var script = argv.c || 'source ' + argv._[0];
+      process.exit(app.vorpal.execSync(script));
+    }
+
+    // Otherwise, start an interactive shell
+    self.vorpal.localEnv[0] = 'cash';
+
     app.vorpal.history('cash').localStorage('cash').help(help);
 
     app.vorpal.find('exit').action(function () {
@@ -141,7 +157,7 @@ var app = {
     });
 
     // Load aliases
-    var all = undefined;
+    var all = void 0;
     try {
       all = JSON.parse(app.vorpal.localStorage.getItem('aliases') || []);
     } catch (e) {
@@ -196,10 +212,10 @@ var app = {
       return path.join(delimiter.getHomeDir(), str);
     });
 
-    for (var i = 0; i < locations.length; ++i) {
+    for (var _i = 0; _i < locations.length; ++_i) {
       try {
-        if (!fs.statSync(locations[i]).isDirectory()) {
-          app.vorpal.execSync('source ' + locations[i]);
+        if (!fs.statSync(locations[_i]).isDirectory()) {
+          app.vorpal.execSync('source ' + locations[_i]);
           break;
         }
       } catch (e) {
